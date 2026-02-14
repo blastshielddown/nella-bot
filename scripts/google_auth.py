@@ -62,8 +62,11 @@ def main() -> None:
     )
 
     if args.no_browser:
-        print("Visit the following URL in any browser to authorize:")
-        creds = flow.run_console()
+        auth_url, _ = flow.authorization_url(prompt="consent")
+        print(f"\nVisit this URL in any browser to authorize:\n\n{auth_url}\n")
+        code = input("Enter the authorization code: ").strip()
+        flow.fetch_token(code=code)
+        creds = flow.credentials
     else:
         print("Opening browser for Google OAuth consent...")
         creds = flow.run_local_server(port=0)
