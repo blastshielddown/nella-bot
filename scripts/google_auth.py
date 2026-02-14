@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""One-time OAuth2 browser flow for Google Workspace APIs.
+"""One-time OAuth2 flow for Google Workspace APIs.
 
-Run this once per account on your Mac to generate a token file,
-then copy it to your VPS.
+Run this once per account to generate a token file.
 
 Usage:
     python scripts/google_auth.py --account work
     python scripts/google_auth.py --account personal
+    python scripts/google_auth.py --account work --no-browser
 """
 
 import argparse
@@ -30,6 +30,12 @@ def main() -> None:
         help="Account name (e.g. 'work', 'personal'). "
         "Token saved to auth_tokens/google_<account>_auth_token.json",
     )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Use console flow instead of opening a browser. "
+        "Prints a URL to visit manually and prompts for the auth code.",
+    )
     args = parser.parse_args()
 
     account = args.account
@@ -50,13 +56,17 @@ def main() -> None:
 
     print(f"Authenticating account: {account}")
     print(f"Requesting scopes: {GoogleAuthManager.SCOPES}")
-    print("Opening browser for Google OAuth consent...")
-
     flow = InstalledAppFlow.from_client_secrets_file(
         str(creds_path),
         scopes=GoogleAuthManager.SCOPES,
     )
-    creds = flow.run_local_server(port=0)
+
+    if args.no_browser:
+        print("Visit the following URL in any browser to authorize:")
+        creds = flow.run_console()
+    else:
+        print("Opening browser for Google OAuth consent...")
+        creds = flow.run_local_server(port=0)
 
     token_path.parent.mkdir(parents=True, exist_ok=True)
     token_path.write_text(creds.to_json(), encoding="utf-8")
