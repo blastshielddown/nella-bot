@@ -12,6 +12,7 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 # Allow running from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -62,9 +63,17 @@ def main() -> None:
     )
 
     if args.no_browser:
+        # Use a localhost redirect URI — after consent, the browser redirects
+        # to localhost which won't be listening. Copy the full URL from the
+        # browser's address bar and paste it here.
+        redirect_uri = "http://localhost:8085/"
+        flow.redirect_uri = redirect_uri
         auth_url, _ = flow.authorization_url(prompt="consent")
         print(f"\nVisit this URL in any browser to authorize:\n\n{auth_url}\n")
-        code = input("Enter the authorization code: ").strip()
+        print("After granting access, the browser will redirect to a page that")
+        print("won't load. Copy the FULL URL from the address bar and paste it here.\n")
+        redirect_response = input("Paste the redirect URL: ").strip()
+        code = parse_qs(urlparse(redirect_response).query)["code"][0]
         flow.fetch_token(code=code)
         creds = flow.credentials
     else:
